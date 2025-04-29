@@ -1,13 +1,22 @@
 'use client'
-import { useState } from "react"
+import { useState } from 'react'
+
+type Result = {
+  healthCenters: number
+  emergencyPods: number
+  mobileUnits: number
+  telemedicine: number
+  educationPoints: number
+  ambulanceStations: number
+}
 
 export default function Page() {
   const [population, setPopulation] = useState(20000)
   const [area, setArea] = useState(4)
   const [accessPct, setAccessPct] = useState(60)
   const [radius, setRadius] = useState(500)
-  const [density, setDensity] = useState("medium")
-  const [result, setResult] = useState(null)
+  const [density, setDensity] = useState('medium')
+  const [result, setResult] = useState<Result | null>(null)
 
   const calculate = () => {
     const accessNeed = population * (accessPct / 100)
@@ -16,7 +25,7 @@ export default function Page() {
     const mobileUnits = Math.ceil(area / 10)
     const telemedicine = Math.ceil(population / 5000)
     const educationPoints = Math.ceil(population / 10000)
-    const ambulanceStations = Math.ceil(area / (density === "high" ? 2 : 4))
+    const ambulanceStations = Math.ceil(area / (density === 'high' ? 2 : 4))
 
     setResult({
       healthCenters,
@@ -29,7 +38,7 @@ export default function Page() {
   }
 
   return (
-    <main>
+    <main style={{ padding: 20, fontFamily: 'sans-serif' }}>
       <h1>Urban Healthcare Planning Tool</h1>
       <div style={{ display: 'grid', gap: 10, maxWidth: 400 }}>
         <label>Population<input type="number" value={population} onChange={e => setPopulation(+e.target.value)} /></label>
