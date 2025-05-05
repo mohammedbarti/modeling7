@@ -1,69 +1,120 @@
-'use client'
-import { useState } from 'react'
+// Step-by-step build of the new HMG Urban Planning Tool (page.tsx)
 
-type Result = {
-  healthCenters: number
-  emergencyPods: number
-  mobileUnits: number
-  telemedicine: number
-  educationPoints: number
-  ambulanceStations: number
-}
+"use client";
+import Image from "next/image";
+import { useState } from "react";
 
-export default function Page() {
-  const [population, setPopulation] = useState(20000)
-  const [area, setArea] = useState(4)
-  const [accessPct, setAccessPct] = useState(60)
-  const [radius, setRadius] = useState(500)
-  const [density, setDensity] = useState('medium')
-  const [result, setResult] = useState<Result | null>(null)
+export default function Home() {
+  const [form, setForm] = useState({
+    population: "",
+    area: "",
+    walkDistance: "",
+    density: "Low",
+    regularAccess: "",
+    growthIndex: "Stable",
+    ageGroup: "",
+    genderGroup: "",
+    settingType: "Urban"
+  });
 
-  const calculate = () => {
-    const accessNeed = population * (accessPct / 100)
-    const healthCenters = Math.ceil(accessNeed / 10000)
-    const emergencyPods = Math.ceil(population / 5000)
-    const mobileUnits = Math.ceil(area / 10)
-    const telemedicine = Math.ceil(population / 5000)
-    const educationPoints = Math.ceil(population / 10000)
-    const ambulanceStations = Math.ceil(area / (density === 'high' ? 2 : 4))
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const pop = parseInt(form.population);
+    const reg = parseFloat(form.regularAccess) / 100;
+    const basePHC = Math.ceil((pop * reg) / 10000);
+    const basePods = Math.ceil((pop * reg) / 5000);
+    const teleBooths = Math.ceil((pop * reg) / 5000);
+    let mobileUnits = Math.ceil(parseFloat(form.area) / 10);
+
+    // Adjustments based on growth
+    let multiplier = form.growthIndex === "Growing" ? 1.15 : form.growthIndex === "Declining" ? 0.9 : 1;
+    const adjustedPHC = Math.ceil(basePHC * multiplier);
+    const adjustedPods = Math.ceil(basePods * multiplier);
+    const adjustedTele = Math.ceil(teleBooths * multiplier);
+    const adjustedMobile = Math.ceil(mobileUnits * multiplier);
+
+    // Age/Gender Modifiers
+    const geriatric = parseInt(form.ageGroup) >= 20 ? 1 : 0;
+    const maternal = parseInt(form.genderGroup) >= 50 ? 1 : 0;
+
+    // Rural Modifiers
+    const helipadPod = form.settingType === "Rural" ? 1 : 0;
+    const extraMobile = form.settingType === "Rural" ? 1 : 0;
 
     setResult({
-      healthCenters,
-      emergencyPods,
-      mobileUnits,
-      telemedicine,
-      educationPoints,
-      ambulanceStations,
-    })
-  }
+      phc: adjustedPHC,
+      pods: adjustedPods,
+      tele: adjustedTele,
+      mobile: adjustedMobile + extraMobile,
+      helipadPod,
+      geriatric,
+      maternal
+    });
+  };
 
   return (
-    <main style={{ padding: 20, fontFamily: 'sans-serif' }}>
-      <h1>Urban Healthcare Planning Tool</h1>
-      <div style={{ display: 'grid', gap: 10, maxWidth: 400 }}>
-        <label>Population<input type="number" value={population} onChange={e => setPopulation(+e.target.value)} /></label>
-        <label>Area (km²)<input type="number" value={area} onChange={e => setArea(+e.target.value)} /></label>
-        <label>% Needing Access<input type="number" value={accessPct} onChange={e => setAccessPct(+e.target.value)} /></label>
-        <label>Walkable Radius (m)<input type="number" value={radius} onChange={e => setRadius(+e.target.value)} /></label>
-        <label>Urban Density
-          <select value={density} onChange={e => setDensity(e.target.value)}>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+    <div className="min-h-screen bg-gray-100 p-6 relative">
+      {/* Logo */}
+      <Image src="/logo.png" alt="HMG Logo" width={100} height={60} className="absolute top-4 left-4" />
+
+      <h1 className="text-2xl font-bold text-center mb-6">HMG Urban Planning Tool</h1>
+
+      <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white p-6 rounded shadow">
+        <div className="grid gap-4">
+          <input type="number" name="population" placeholder="Population" onChange={handleChange} required className="border p-2" />
+          <input type="number" name="area" placeholder="Area (km²)" onChange={handleChange} required className="border p-2" />
+          <input type="number" name="walkDistance" placeholder="Walk Distance (m)" onChange={handleChange} required className="border p-2" />
+          <input type="number" name="regularAccess" placeholder="% Requiring Regular Care" onChange={handleChange} required className="border p-2" />
+
+          <select name="density" onChange={handleChange} className="border p-2">
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
           </select>
-        </label>
-        <button onClick={calculate}>Calculate</button>
-      </div>
+
+          <select name="growthIndex" onChange={handleChange} className="border p-2">
+            <option>Stable</option>
+            <option>Growing</option>
+            <option>Declining</option>
+          </select>
+
+          <input type="number" name="ageGroup" placeholder="% Elderly Population" onChange={handleChange} className="border p-2" />
+          <input type="number" name="genderGroup" placeholder="% Female Population" onChange={handleChange} className="border p-2" />
+
+          <select name="settingType" onChange={handleChange} className="border p-2">
+            <option>Urban</option>
+            <option>Rural</option>
+          </select>
+
+          <button type="submit" className="bg-blue-600 text-white py-2">Generate Recommendations</button>
+        </div>
+      </form>
+
       {result && (
-        <ul style={{ marginTop: 20 }}>
-          <li>Primary Health Centers: {result.healthCenters}</li>
-          <li>Emergency Pods: {result.emergencyPods}</li>
-          <li>Mobile Clinics: {result.mobileUnits}</li>
-          <li>Telemedicine Kiosks: {result.telemedicine}</li>
-          <li>Health Education Points: {result.educationPoints}</li>
-          <li>Ambulance Stations: {result.ambulanceStations}</li>
-        </ul>
+        <div className="max-w-xl mx-auto bg-white mt-6 p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Recommendations</h2>
+          <ul className="list-disc ml-6 space-y-2">
+            <li>{result.phc} Primary Health Centers – based on population and regular access rate</li>
+            <li>{result.pods} Emergency Pods – calculated per 5,000 residents</li>
+            <li>{result.tele} Telemedicine Booths – evenly distributed by usage ratio</li>
+            <li>{result.mobile} Mobile Clinics – based on area and rural adjustment</li>
+            {result.helipadPod > 0 && <li>1 Helipad-Equipped Emergency Pod – due to rural classification</li>}
+            {result.geriatric > 0 && <li>1 Geriatric Care Unit – based on elderly population ≥ 20%</li>}
+            {result.maternal > 0 && <li>1 Maternal Health Center – due to female population ≥ 50%</li>}
+          </ul>
+        </div>
       )}
-    </main>
-  )
+
+      {/* Footer */}
+      <footer className="text-xs text-right pr-4 pt-10 text-gray-500 absolute bottom-2 right-2">
+        Made by: Dr. Mohammed AlBarti – Corporate Business Development
+      </footer>
+    </div>
+  );
 }
